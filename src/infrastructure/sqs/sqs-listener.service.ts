@@ -3,6 +3,12 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/commo
 
 import { EnvService } from "@infra/env/env.service";
 
+type ProductEvent = {
+  data?: Record<string, unknown>;
+  occurredAt?: string;
+  type?: string;
+};
+
 @Injectable()
 export class SqsListenerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(SqsListenerService.name);
@@ -71,7 +77,7 @@ export class SqsListenerService implements OnModuleInit, OnModuleDestroy {
     }
 
     try {
-      const parsed = JSON.parse(body) as unknown;
+      const parsed = JSON.parse(body) as ProductEvent;
       this.logger.log(`Received SQS event: ${JSON.stringify(parsed)}`);
     } catch {
       this.logger.log(`Received raw SQS message: ${body}`);
