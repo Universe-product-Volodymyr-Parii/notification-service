@@ -1,5 +1,6 @@
 import { DynamicModule, Module } from "@nestjs/common";
 
+import { AwsConfig } from "./config/aws.config";
 import { EnvService } from "./env/env.service";
 import { SqsListenerService } from "./sqs/sqs-listener.service";
 
@@ -9,8 +10,8 @@ export class InfraModule {
     return {
       module: InfraModule,
       global: true,
-      providers: [EnvService, SqsListenerService],
-      exports: [EnvService, SqsListenerService],
+      providers: [AwsConfig, EnvService, SqsListenerService],
+      exports: [AwsConfig, EnvService, SqsListenerService],
     };
   }
 }

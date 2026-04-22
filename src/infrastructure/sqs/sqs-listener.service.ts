@@ -1,7 +1,9 @@
 import { DeleteMessageCommand, ReceiveMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 
-import { EnvService } from "@infra/env/env.service";
+import { AwsConfig } from "@infra/config/aws.config";
+
+import { sleep } from "@lib/utils/sleep";
 
 type ProductEvent = {
   data?: Record<string, unknown>;
@@ -14,18 +16,16 @@ export class SqsListenerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(SqsListenerService.name);
   private readonly client: SQSClient;
   private readonly queueUrl: string;
+  private readonly receiveMessageCommandConfig: Omit<ReceiveMessageCommand["input"], "QueueUrl">;
+
   private isRunning = false;
 
-  constructor(private readonly envService: EnvService) {
-    this.client = new SQSClient({
-      credentials: {
-        accessKeyId: this.envService.get("AWS_ACCESS_KEY_ID"),
-        secretAccessKey: this.envService.get("AWS_SECRET_ACCESS_KEY"),
-      },
-      endpoint: this.envService.get("SQS_ENDPOINT"),
-      region: this.envService.get("AWS_REGION"),
-    });
-    this.queueUrl = this.envService.get("SQS_QUEUE_URL");
+  constructor(private readonly awsConfig: AwsConfig) {
+    const config = this.awsConfig.getConfig();
+
+    this.client = new SQSClient(config.clientConfig);
+    this.queueUrl = config.queueUrl;
+    this.receiveMessageCommandConfig = config.receiveMessageCommand;
   }
 
   onModuleInit(): void {
@@ -44,10 +44,8 @@ export class SqsListenerService implements OnModuleInit, OnModuleDestroy {
       try {
         const response = await this.client.send(
           new ReceiveMessageCommand({
-            MaxNumberOfMessages: 10,
             QueueUrl: this.queueUrl,
-            VisibilityTimeout: 30,
-            WaitTimeSeconds: 20,
+            ...this.receiveMessageCommandConfig,
           }),
         );
 
@@ -65,7 +63,7 @@ export class SqsListenerService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (error) {
         this.logger.error("Failed to process SQS messages", error);
-        await this.delay(3000);
+        await sleep(3000);
       }
     }
   }
@@ -82,11 +80,5 @@ export class SqsListenerService implements OnModuleInit, OnModuleDestroy {
     } catch {
       this.logger.log(`Received raw SQS message: ${body}`);
     }
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
   }
 }

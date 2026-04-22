@@ -24,6 +24,7 @@
     "types": ["node"],
     "paths": {
       "@infra/*": ["./src/infrastructure/*"],
+      "@lib/*": ["./src/lib/*"],
       "@/*": ["./src/*"]
     }
   }
