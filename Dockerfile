@@ -21,11 +21,11 @@ FROM node:24-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=8080
+ENV PORT=8081
 
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 
 EXPOSE 8081
 
-CMD ["node", "dist/src/app/main.js"]
+CMD ["node", "dist/app/main.js"]
